@@ -2,18 +2,24 @@ const express = require('express')
 const cors = require('cors')
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const cookieParser = require('cookie-parser')
+const jwt = require('jsonwebtoken')
 const app = express()
 const port = process.env.PORT || 5000
 
 
 // midlleware 
 app.use(cors({
-  origin:[
-    'http://localhost:5173'
+  origin: [
+    'http://localhost:5173',
+    'https://hotel-fair.web.app',
+    'https://b9a11hotelfairs.netlify.app',
   ],
   credentials: true,
+  optionsSuccessStatus: 200,
 }))
 app.use(express.json())
+app.use(cookieParser())
 
 
 
@@ -38,17 +44,37 @@ async function run() {
 
     const roomsCollection = client.db('OurRooms').collection('rooms')
 
-    app.get('/rooms', async(req, res)=>{
-        const cursor = roomsCollection.find()
-        const result = await cursor.toArray()
-        res.send(result)
+
+    // for token 
+    app.post('/jwt', async (req, res) => {
+      const user = req.body
+      const token = jwt.sign(user, process.env.DB_ACCESS_TOKEN, { expiresIn: '1d' })
+      res
+        .cookie('token', token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none'
+        })
+        .send({ success: true })
     })
 
-    app.get('/rooms/:id', async(req, res) => {
-        const id = req.params.id;
-        const query = { _id : new ObjectId(id) }
-        const result = await roomsCollection.findOne(query)
-        res.send(result)
+    app.post('/logOut', async (req, res) => {
+      res
+        .clearCookie('token', { maxAge: 0 })
+        .send({ success: true })
+    })
+
+    app.get('/rooms', async (req, res) => {
+      const cursor = roomsCollection.find()
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+    app.get('/rooms/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await roomsCollection.findOne(query)
+      res.send(result)
     })
 
 
@@ -70,9 +96,9 @@ run().catch(console.dir);
 
 
 
-app.get('/', async (req, res)=>{
-    res.send('hotel fairs api is calling okay');
+app.get('/', async (req, res) => {
+  res.send('hotel fairs api is calling okay');
 })
-app.listen(port, ()=>{
-    console.log(`okay it's working with this port ${port}`);
+app.listen(port, () => {
+  console.log(`okay it's working with this port ${port}`);
 })
