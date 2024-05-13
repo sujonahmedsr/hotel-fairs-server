@@ -22,6 +22,23 @@ app.use(express.json())
 app.use(cookieParser())
 
 
+const verifyToken = (req, res, next)=>{
+  const token = req?.cookies?.token
+  if(!token){
+    return res.status(401).send({ message: 'unathorized access' })
+  }
+  if(token){
+    jwt.verify(token, process.env.DB_ACCESS_TOKEN, (err, decoded)=>{
+      if(err){
+        return res.status(401).send({ message: 'unathorized access' })
+      }
+      req.user = decoded
+      next()
+    })
+  }
+}
+
+
 
 // mongodb added 
 
@@ -43,6 +60,7 @@ async function run() {
     // await client.connect();
 
     const roomsCollection = client.db('OurRooms').collection('rooms')
+    const myRoomsCollection = client.db('OurRooms').collection('myRooms')
 
 
     // for token 
@@ -74,6 +92,13 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await roomsCollection.findOne(query)
+      res.send(result)
+    })
+
+
+    app.post('/myRooms', async(req, res)=>{
+      const bookingData = req.body
+      const result = await myRoomsCollection.insertOne(bookingData)
       res.send(result)
     })
 
