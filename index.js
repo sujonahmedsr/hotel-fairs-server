@@ -113,6 +113,27 @@ async function run() {
       res.send(result)
     })
 
+    app.patch('/myRooms/:id', async(req, res)=>{
+      const id = req.params.id
+      const filter = { _id : new ObjectId(id)}
+      const options = { upsert: true };
+      const update = req.body
+      const updateDate = {
+        $set:{
+          bookingDate : update.bookingDate
+        }
+      }
+      const result = await myRoomsCollection.updateOne(filter, updateDate, options)
+      res.send(result)
+    })
+
+    app.delete('/myRooms/:id', async(req, res)=>{
+      const id = req.params.id
+      const query = { _id : new ObjectId(id)}
+      const result = await myRoomsCollection.deleteOne(query)
+      res.send(result)
+    })
+
 
 
 
