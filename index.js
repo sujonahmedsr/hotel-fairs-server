@@ -96,7 +96,7 @@ async function run() {
     })
 
 
-    app.get('/myRooms', async (req, res) => {
+    app.get('/myRooms', verifyToken, async (req, res) => {
       let query = {}
       if (req.query?.email) {
         query = { email: req.query.email }
