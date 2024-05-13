@@ -96,6 +96,17 @@ async function run() {
     })
 
 
+    app.get('/myRooms', async (req, res) => {
+      let query = {}
+      if (req.query?.email) {
+        query = { email: req.query.email }
+      }
+      const cursor = myRoomsCollection.find(query)
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+
     app.post('/myRooms', async(req, res)=>{
       const bookingData = req.body
       const result = await myRoomsCollection.insertOne(bookingData)
