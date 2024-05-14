@@ -21,6 +21,9 @@ app.use(cors({
 app.use(express.json())
 app.use(cookieParser())
 
+const logger = (req, res, next)=>{
+  next()
+}
 
 const verifyToken = (req, res, next)=>{
   const token = req?.cookies?.token
@@ -97,7 +100,7 @@ async function run() {
     })
 
 
-    app.get('/myRooms', verifyToken, async (req, res) => {
+    app.get('/myRooms', logger, verifyToken, async (req, res) => {
       let query = {}
       if (req.query?.email) {
         query = { email: req.query.email }
@@ -138,7 +141,7 @@ async function run() {
 
     // review 
     app.get('/reviews', async (req, res) => {
-      const cursor = rewviewCollection.find()
+      const cursor = rewviewCollection.find().sort( {reviewDate: -1 })
       const result = await cursor.toArray()
       res.send(result)
     })
