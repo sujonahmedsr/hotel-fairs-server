@@ -61,6 +61,7 @@ async function run() {
 
     const roomsCollection = client.db('OurRooms').collection('rooms')
     const myRoomsCollection = client.db('OurRooms').collection('myRooms')
+    const rewviewCollection = client.db('OurRooms').collection('reviews')
 
 
     // for token 
@@ -131,6 +132,20 @@ async function run() {
       const id = req.params.id
       const query = { _id : new ObjectId(id)}
       const result = await myRoomsCollection.deleteOne(query)
+      res.send(result)
+    })
+
+
+    // review 
+    app.get('/reviews', async (req, res) => {
+      const cursor = rewviewCollection.find()
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+    
+    app.post('/reviews', async(req, res)=>{
+      const userReviews = req.body
+      const result = await rewviewCollection.insertOne(userReviews)
       res.send(result)
     })
 
