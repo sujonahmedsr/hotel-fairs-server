@@ -9,11 +9,19 @@ const port = process.env.PORT || 5000
 
 
 // midlleware 
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+};
+
 app.use(cors({
   origin: [
     'http://localhost:5173',
     'https://hotel-fair.web.app',
     'https://b9a11hotelfairs.netlify.app',
+    'https://hotel-fair-crud.vercel.app'
   ],
   credentials: true,
   optionsSuccessStatus: 200,
@@ -21,18 +29,18 @@ app.use(cors({
 app.use(express.json())
 app.use(cookieParser())
 
-const logger = (req, res, next)=>{
+const logger = (req, res, next) => {
   next()
 }
 
-const verifyToken = (req, res, next)=>{
+const verifyToken = (req, res, next) => {
   const token = req?.cookies?.token
-  if(!token){
+  if (!token) {
     return res.status(401).send({ message: 'unathorized access' })
   }
-  if(token){
-    jwt.verify(token, process.env.DB_ACCESS_TOKEN, (err, decoded)=>{
-      if(err){
+  if (token) {
+    jwt.verify(token, process.env.DB_ACCESS_TOKEN, (err, decoded) => {
+      if (err) {
         return res.status(401).send({ message: 'unathorized access' })
       }
       req.user = decoded
@@ -68,23 +76,31 @@ async function run() {
 
 
     // for token 
-    app.post('/jwt', async (req, res) => {
-      const user = req.body
-      const token = jwt.sign(user, process.env.DB_ACCESS_TOKEN, { expiresIn: '1d' })
-      res
-        .cookie('token', token, {
-          httpOnly: true,
-          secure: true,
-          sameSite: 'none'
-        })
-        .send({ success: true })
-    })
+    // app.post('/jwt', async (req, res) => {
+    //   const user = req.body
+    //   const token = jwt.sign(user, process.env.DB_ACCESS_TOKEN, { expiresIn: '1d' })
+    //   res
+    //     .cookie('token', token, {
+    //       httpOnly: true,
+    //       secure: true,
+    //       sameSite: 'none'
+    //     })
+    //     .send({ success: true })
+    // })
 
-    app.post('/logOut', async (req, res) => {
+    app.post("/jwt", logger, async (req, res) => {
+      const user = req.body;
+      console.log("user for token", user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
+    
+      res.cookie("token", token, cookieOptions).send({ success: true });
+    });
+
+    app.post("/logout", async (req, res) => {
       res
-        .clearCookie('token', { maxAge: 0 })
-        .send({ success: true })
-    })
+        .clearCookie("token", { ...cookieOptions, maxAge: 0 })
+        .send({ success: true });
+    });
 
     app.get('/rooms', async (req, res) => {
       const cursor = roomsCollection.find()
@@ -111,29 +127,29 @@ async function run() {
     })
 
 
-    app.post('/myRooms', async(req, res)=>{
+    app.post('/myRooms', async (req, res) => {
       const bookingData = req.body
       const result = await myRoomsCollection.insertOne(bookingData)
       res.send(result)
     })
 
-    app.patch('/myRooms/:id', async(req, res)=>{
+    app.patch('/myRooms/:id', async (req, res) => {
       const id = req.params.id
-      const filter = { _id : new ObjectId(id)}
+      const filter = { _id: new ObjectId(id) }
       const options = { upsert: true };
       const update = req.body
       const updateDate = {
-        $set:{
-          bookingDate : update.bookingDate
+        $set: {
+          bookingDate: update.bookingDate
         }
       }
       const result = await myRoomsCollection.updateOne(filter, updateDate, options)
       res.send(result)
     })
 
-    app.delete('/myRooms/:id', async(req, res)=>{
+    app.delete('/myRooms/:id', async (req, res) => {
       const id = req.params.id
-      const query = { _id : new ObjectId(id)}
+      const query = { _id: new ObjectId(id) }
       const result = await myRoomsCollection.deleteOne(query)
       res.send(result)
     })
@@ -141,12 +157,12 @@ async function run() {
 
     // review 
     app.get('/reviews', async (req, res) => {
-      const cursor = rewviewCollection.find().sort( {reviewDate: -1 })
+      const cursor = rewviewCollection.find().sort({ reviewDate: -1 })
       const result = await cursor.toArray()
       res.send(result)
     })
-    
-    app.post('/reviews', async(req, res)=>{
+
+    app.post('/reviews', async (req, res) => {
       const userReviews = req.body
       const result = await rewviewCollection.insertOne(userReviews)
       res.send(result)
